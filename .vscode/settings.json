@@ -10,6 +10,7 @@
         ".classroom50.yaml": true,
         "README.md": true,
         ".specstory": true,
+        "classroom50-helper-extension": true,
         "labs/lab*/*.png": true
     },
     "github.copilot.chat.useInstructionFiles": true,

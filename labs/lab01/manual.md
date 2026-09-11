@@ -1,50 +1,15 @@
-# F215 Digital Design — Lab 1
-## From Gates to Fast Adders in Verilog
+# F215 Digital Design Lab 
+## Verilog Lab
 
-This is your first hands-on Verilog lab. You've seen the theory lecture but
-have not written or simulated any Verilog yet — that's normal. Every task
-builds directly on the one before it, so work through them in order.
+This is your first hands-on Verilog lab. 
 
 Each task has its own folder (`task1/`, `task2/`, ...) containing exactly
-one testbench, always named `tb.v`, plus any starter/skeleton code for that
-task. All testbenches are provided — you are not required to write your own
-for this lab.
+one testbench, always named `tb.v`.
 
-Files marked **"given — do not modify"** should be left exactly as they
-are; everything else contains `TODO` comments marking what you need to
-fill in. Where a task needs a file you completed in an earlier task, that's
-noted explicitly — copy the completed file forward into the new folder
-rather than rewriting it.
-
-**Waveform dumps:** every `tb.v` includes this block, unchanged:
-```verilog
-// Waveform dump configuration
-string vcd_file;
-initial begin
-  if ($value$plusargs("vcd=%s", vcd_file)) begin
-    $dumpfile(vcd_file);
-    $dumpvars(0, DUT);
-  end
-end
-```
-The `vcd_file` name itself is supplied externally when the simulation is
-run — you don't need to choose or specify a filename yourself.
-
-**Delays:** starting with Task 2, every gate or `assign` statement you
-write in this lab should carry an explicit delay. This isn't a special
-step reserved for one task — from Task 2 onward it's just the default way
-we write Verilog in this lab, and every later skeleton file assumes it.
-
-Tasks 3, 4, and 5 use a **wrapper pattern**: a small `dut.v` module in each
-folder instantiates exactly one of several interchangeable implementations
-(the other two are left commented out). The single `tb.v` in that folder
-tests whatever `dut.v` currently points to. To compare implementations, you
-edit `dut.v` to activate a different one, recompile, and rerun — the
-testbench itself never changes.
 
 ---
 
-## Task 1 — Simulate a full adder, then see if gate order matters
+## Task 1 -  Simulate a full adder, then see if gate order matters, and observe the waveforms on adding delays in the gates
 
 **Folder:** `task1/`
 **Files:** `FA_Gate.v` (**edit in place**), `tb.v` (given)
@@ -58,14 +23,13 @@ combinations the testbench applies.
 different sequence (e.g. move the final `or` to the top, the first `xor` to
 the bottom). Re-simulate with the same `tb.v`.
 
-**Question:** Does the waveform change? Explain your answer in terms of how
-Verilog gate-level statements actually execute — this is the "all
-statements execute in parallel, not sequentially" idea from lecture, now
-something you've verified yourself rather than just read.
+**(c)** Add a constant delay to every gate in `FA_Gate.v` (e.g. `xor #(2) (ps, a, b);`).
+
+**Question:** Does the waveform change in task 1(b) or 1(c) when compared with task 1(a)? Explain your answer in terms of how Verilog gate-level statements actually execute
 
 ---
 
-## Task 2 — Delays, and a structural 4-bit ripple-carry adder
+## Task 2 - Structural 4-bit ripple-carry adder
 
 **Folder:** `task2/`
 **Files:** `FA_Gate.v` (**edit in place**), `ripple_adder.v` (**skeleton — complete this**), `tb.v` (given)
@@ -73,8 +37,7 @@ something you've verified yourself rather than just read.
 This task introduces gate delays, then uses them immediately to build a
 4-bit ripple-carry adder from four `FA_Gate` instances.
 
-**(a) Constant delays.** Add a constant delay to every gate in
-`FA_Gate.v` (e.g. `xor #(2) (ps, a, b);`). Complete `ripple_adder.v` by
+Complete `ripple_adder.v` by
 instantiating four `FA_Gate` modules and wiring them into a ripple-carry
 chain, following the `TODO` comments and the named port-connection pattern
 from lecture. Simulate against `tb.v`.
@@ -87,14 +50,6 @@ from lecture. Simulate against `tb.v`.
    settle a little later than the one before it — this is the ripple,
    now visible rather than just asserted in lecture.
 
-**(b) Rise/fall delays.** Go back into `FA_Gate.v` and change every gate's
-delay from a single constant value to a rise/fall pair instead (e.g.
-`xor #(2,3) (ps, a, b);` — rise delay 2, fall delay 3). Re-simulate with
-the *same* `ripple_adder.v` and `tb.v`; nothing else needs to change.
-
-**Question:** Pick one gate whose rise and fall delays you set to different
-values. Find both a 0→1 and a 1→0 transition on that gate's output in the
-waveform, and confirm the timing difference matches what you specified.
 
 ---
 
