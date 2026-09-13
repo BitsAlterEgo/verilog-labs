@@ -1,8 +1,6 @@
 # F215 Digital Design — Lab 2
 
-*Dataflow & Behavioral Modeling, and Writing Testbenches — purely combinational, no sequential logic yet*
-
-This lab moves beyond gate-level structural modeling (Lab 1) into dataflow and behavioral modeling, and into writing your own testbenches rather than being handed one. Every task in this lab is purely combinational — no clocks, no flip-flops, nothing sequential. That's coming in a later lab.
+*Dataflow & Behavioral Modeling, and Writing Testbenches*
 
 ### What you'll take away from this lab
 
@@ -14,18 +12,6 @@ This lab moves beyond gate-level structural modeling (Lab 1) into dataflow and b
 - How the choice of sensitivity list changes what an `always` block actually does.
 - Blocking vs. non-blocking assignment, and why the rule "blocking for combinational, non-blocking for sequential" exists.
 
-### Running a simulation
-
-Same flow as Lab 1. From inside a task folder:
-
-```
-iverilog -o sim dut.v mux_df.v mux_beh.v tb.v
-vvp sim +vcd=dump.vcd
-gtkwave dump.vcd
-```
-
-*(Substitute whichever source files that task actually needs — see each task's file list below. Not every task uses a `dut.v` wrapper.)*
-
 ---
 
 ## Task 1 — Nets vs. Registers: the same mux, two ways
@@ -34,29 +20,31 @@ gtkwave dump.vcd
 
 - **`mux_df.v`** — *given, buggy — fix it*
 - **`mux_beh.v`** — *given, buggy — fix it*
-- **`dut.v`** — *given — swap-and-comment wrapper, same pattern as Lab 1*
-- **`tb.v`** — *given as a starter template — you complete it*
+- **`dut.v`** — *given — but you have to select the correct muxmodule to simulate by commenting out the other instantiation*
+- **`tb.v`** — *given as a starter template — you have to complete it*
 
-### (a) Compile and fix
+### (a) Complete tb.v
 
-Try to compile `mux_df.v` and `mux_beh.v` (against `dut.v`, once your `tb.v` is ready). Both will fail. In each case, exactly one port has the wrong type for the modeling style it's used in. Fix the port declaration — don't change the logic.
+`tb.v` is given as a starter template with the `reg`/`wire` keywords already in place, but the actual declarations, the DUT instantiation, and the input stimulus are left for you to fill in (look for every `TODO`). Apply all 8 combinations of I0, I1, S, 5 time units apart for testing the circuits.
+
+### (b) Compile and fix
+
+Try to compile `mux_df.v` and `mux_beh.v` separately (by instantiating them inside `dut.v`, once your `tb.v` is ready). Both will fail. Identify the semantic error and fix it, then run again.
 
 Before you fix anything, write down (a sentence each is enough): why does dataflow modeling require its output to be a net, and why does behavioral modeling require its output to be a `reg`? What would the simulator actually be confused about if you left the bug in?
-
-### (b) Complete tb.v
-
-`tb.v` is given as a starter template with the `reg`/`wire` keywords already in place, but the actual declarations, the DUT instantiation, and the input stimulus are left for you to fill in (look for every `TODO`). Apply all 8 combinations of I0, I1, S, 5 time units apart — the same shape of stimulus block you wrote in Lab 1.
-
-Run it against `mux_df` first, then comment that instantiation out in `dut.v` and uncomment `mux_beh`, and re-run against the same `tb.v`. Confirm both give identical output.
 
 ---
 
 ## Task 2 — Vectors, Arrays, and Parameters: a small ROM
 
-`lut.v` is a parameterized lookup table: `DEPTH` words, each `WIDTH` bits wide, read out combinationally through `dout` as `sel` changes.
+`lut.v` is a parameterized lookup table: it has `DEPTH` lines in it, with each line `WIDTH` bits wide. A line is read out (appears on the output `dout`) combinationally based on the signal applied at the `sel` input.
 
 - **`lut.v`** — *given as a skeleton — two TODOs for you to complete*
 - **`tb.v`** — *not provided — you write this yourself*
+
+### A hint on $clog2
+
+The `sel` port is declared as `[$clog2(DEPTH)-1:0]` rather than a fixed width. `$clog2(x)` is a built-in system function that computes ⌈log₂(x)⌉ — the ceiling of log base 2 — which is exactly the number of address bits needed to reach DEPTH distinct locations. The point is that `sel`'s width now tracks DEPTH automatically: if you override DEPTH at instantiation, the address width recalculates itself, and you never have to remember to keep a second width parameter in sync by hand. For example, `$clog2(4) = 2` (2 bits address 4 locations), and `$clog2(8) = 3`.
 
 ### (a) Complete lut.v
 
@@ -68,10 +56,6 @@ Two things are left for you:
 ### Why an initial block, here specifically
 
 A ROM's contents need to exist before anything ever reads from it, and they never change during simulation after that. `initial` is the only one of the two procedural blocks that matches this: it runs exactly once, at time 0, before the rest of the simulation gets going. `always` would be the wrong tool here — it only runs again in response to something in its sensitivity list changing, and a fixed set of constants has nothing that ever changes to trigger it. `assign` is also out: it's for driving a net continuously from an expression, not for loading a whole array's worth of individual values. Use a `for` loop inside your `initial` block to set every location without writing DEPTH separate lines by hand.
-
-### A hint on $clog2
-
-The `sel` port is declared as `[$clog2(DEPTH)-1:0]` rather than a fixed width. `$clog2(x)` is a built-in system function that computes ⌈log₂(x)⌉ — the ceiling of log base 2 — which is exactly the number of address bits needed to reach DEPTH distinct locations. The point is that `sel`'s width now tracks DEPTH automatically: if you override DEPTH at instantiation, the address width recalculates itself, and you never have to remember to keep a second width parameter in sync by hand. For example, `$clog2(4) = 2` (2 bits address 4 locations), and `$clog2(8) = 3`.
 
 ### (b) Write tb.v and use a parameter override
 
@@ -94,14 +78,14 @@ Loop `sel` through every valid address and check `t_dout` against the `i×i` val
 
 So far your testbenches have applied stimulus and let you eyeball the waveform. This task is about writing a testbench that decides pass or fail on its own.
 
-- **`comp2.v`** — *given, buggy — do not read it yet*
-- **`tb.v`** — *not provided — you write this yourself*
+- **`comp2.v`** — *given*
+- **`tb.v`** — *not provided — write this yourself*
 
 `comp2.v` is a 2-bit magnitude comparator: given A and B, exactly one of GT, LT, EQ should be 1 for any input pair. It has a bug. Write your testbench first, before you look at the module's source — a good self-checking testbench should find the bug for you without you needing to read the design at all.
 
 ### How a testbench asserts correctness
 
-The pattern: for every input combination, compute the expected outputs independently in the testbench (not by copying the design's logic — that would just repeat the same bug if there is one), then compare. Use `!==` rather than `!=` for the comparison: `!==` is case inequality, and treats X/Z as ordinary values in the comparison, so it always resolves to a clean true or false. `!=` can itself evaluate to X when an operand is X, which can make a broken comparison silently pass instead of failing.
+The pattern: for every input combination, compute the expected outputs independently in the testbench (not by copying the design's logic — that would just repeat the same bug if there is one), then compare. Use `!==` rather than `!=` for the comparison.
 
 ```verilog
 if ({t_gt, t_lt, t_eq} !== {exp_gt, exp_lt, exp_eq}) begin
@@ -127,12 +111,14 @@ Fix `comp2.v`, and re-run the exact same testbench, unchanged. Confirm your summ
 
 ## Task 4 — Delays: where you put them changes what they mean
 
-You will write three tiny modules, all implementing the same 2-input AND gate, differing only in where a `#5` delay is placed:
+You will write three tiny modules, all implementing the same 2-input AND gate, differing only in where and how long of a delay is placed:
 
 - **`and_df.v`** — *not provided — you write this*
 - **`and_beh_before.v`** — *not provided — you write this*
 - **`and_beh_intra.v`** — *not provided — you write this*
 - **`tb.v`** — *given — instantiates all three together, do not modify*
+
+`tb.v` is given and instantiates `and_df`, `and_beh_before`, and `and_beh_intra` side by side, driven by the same fast-toggling stimulus, so all three outputs land in one waveform view.
 
 ### Where a delay can go
 
@@ -143,27 +129,39 @@ There are exactly two places to put a delay in a single procedural assignment, a
 
 A continuous assignment can carry a delay too: `assign #5 y = a & b;` — this is dataflow's own version, and behaves like a third, independent case (more on this below).
 
-### (a) Write all three, and predict before you simulate
+### (a) add 1 time step delays to all three modules
 
-- `and_df.v` — dataflow, `assign #5 y = a & b;`
+- `and_df.v` — dataflow, `assign #1 y = a & b;`
 - `and_beh_before.v` — behavioral, `always @(*)` with the delay placed before the assignment
 - `and_beh_intra.v` — behavioral, `always @(*)` with an intra-assignment delay
 
-Before you run anything: if `a` and `b` change faster than the 5-unit delay (say, every 2 time units), which of these three do you expect to still track the inputs correctly, and which do you expect to occasionally show a wrong value? Write down your prediction and your reasoning for each of the three — you'll check yourself against the waveform next.
+Compare the output of the three implementations (all are in the single output waveform). Which implementationsgive the correct expected results?
 
-### (b) Simulate and compare
+### (b) add 2 time step delays to all three modules
 
-`tb.v` is given and instantiates `and_df`, `and_beh_before`, and `and_beh_intra` side by side, driven by the same fast-toggling stimulus, so all three outputs land in one waveform view. Run it, open the waveform, and check your prediction from part (a) against what actually happened. Note, for each of the three, whether it was right or wrong, and at which specific time(s) any wrong output occurred.
+- `and_df.v` — dataflow, `assign #2 y = a & b;`
+- `and_beh_before.v` — behavioral, `always @(*)` with the delay placed before the assignment
+- `and_beh_intra.v` — behavioral, `always @(*)` with an intra-assignment delay
 
-### Is delay relevant in dataflow, then?
+Compare the output of the three implementations (all are in the single output waveform). Which implementationsgive the correct expected results?
 
-Yes, and `assign #5 y = a & b;` is safe in a way that `#5 y = a & b;` inside a procedural block is not. A continuous assignment re-evaluates its right-hand side immediately, every time any input on it changes — the delay only controls when that already-correct value is written to the net. That makes it behave like the intra-assignment case, not like the risky before-assignment case, even though the `#` appears in the same position in the line. Where the `#` sits in a continuous assignment (right after `assign`) doesn't carry the same danger it does in a procedural one — because there's no separate "before" position to place it in the first place.
+### (c) add 3 time step delays to all three modules
+
+- `and_df.v` — dataflow, `assign #3 y = a & b;`
+- `and_beh_before.v` — behavioral, `always @(*)` with the delay placed before the assignment
+- `and_beh_intra.v` — behavioral, `always @(*)` with an intra-assignment delay
+
+Compare the output of the three implementations (all are in the single output waveform). Which implementationsgive the correct expected results?
+
+### (d) Explain your observations across the 9 cases above (3 implementations x 3 delays)
+
+### (e) What do you learn from this regarding running simulations with delays?
 
 ---
 
-## Task 5 — Capstone: Sensitivity Lists and Blocking vs. Non-Blocking
+## Task 5 — Sensitivity Lists and Blocking vs. Non-Blocking
 
-`alu.v` is a 1-bit-opcode ALU (op=0: add, op=1: sub) operating on two 4-bit vectors. Subtraction is implemented the way real hardware actually does it: negate b (one's complement, then +1 for two's complement) and add the result to a. It's given to you complete but broken — there are two separate bugs, and you're expected to find both purely by simulating it, not by reading the source first.
+`alu.v` is a 1-bit-opcode ALU (op=0: add, op=1: sub) operating on two 4-bit vectors. Subtraction is implemented the way real hardware actually does it: negate b (one's complement, then +1 for two's complement) and add the result to a. It's given to you complete but broken — there are two separate bugs, and you're expected to find both purely by simulating it, not by reading the source codeof the module.
 
 - **`alu.v`** — *given, buggy — do not read the internals until your testbench has told you something is wrong*
 - **`tb.v`** — *not provided — you write this yourself*
@@ -172,9 +170,9 @@ Write a testbench for `alu.v` (a self-checking one, using what you built in Task
 
 ### What you're looking for
 
-The sensitivity-list bug: test the same operand pair with both values of `op`, and watch for `result` simply failing to respond when you'd expect it to.
+1. The sensitivity-list bug: test the same operand pair with both values of `op`, and watch for `result` simply failing to respond when you'd expect it to. Fix this bug by adding only specific signals to the sensitivity list **(not *)**.
 
-The blocking/non-blocking bug is in the subtract path, which computes its result over three dependent steps — `b_inv`, then `b_twos` (which needs `b_inv`), then `result` (which needs `b_twos`). Test subtraction with a few different operand pairs and check every result against a-b computed by hand or in your testbench. If the assignment types in that three-step chain aren't all consistent, each step ends up using the value its input had before this evaluation, rather than the value just computed earlier in the same block — so the whole chain runs one step behind. You should be able to catch this on essentially any subtraction test, including the very first one you try; you don't need any special timing trick to expose it. Once you see it, look directly at the three statements in the sub branch and check whether they're all using the same assignment operator.
+2. The blocking/non-blocking bug is in the subtract path, which computes its result over three dependent steps — `b_inv`, then `b_twos` (which needs `b_inv`), then `result` (which needs `b_twos`). Test subtraction with a few different operand pairs and check every result against a-b computed by hand or in your testbench. If the assignment types in that three-step chain aren't all consistent, each step ends up using the value its input had before this evaluation, rather than the value just computed earlier in the same block — so the whole chain runs one step behind. You should be able to catch this on essentially any subtraction test, including the very first one you try; you don't need any special timing trick to expose it. Once you see it, look directly at the three statements in the sub branch and check whether they're all using the same assignment operator.
 
 This is exactly the kind of situation the blocking-for-combinational rule is meant to prevent: whenever one procedural statement's result feeds directly into the next one in the same block, non-blocking assignment breaks that chain, because none of the new values become visible to each other until the whole block has finished executing.
 
